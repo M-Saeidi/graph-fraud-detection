@@ -1,0 +1,30 @@
+# Migration gate: only explicitly reviewed files are eligible for staging.
+# Expand this allowlist explicitly after each component passes review.
+/*
+!/.gitignore
+!/MIGRATION_INVENTORY.md
+!/RELEASE_CHECKLIST.md
+!/pytest.ini
+!/requirements-test.txt
+!/requirements-rdf.txt
+!/requirements-model-conversion.txt
+!/FastAPI/
+/FastAPI/*
+!/FastAPI/feature_assembler.py
+!/FastAPI/time_key.py
+!/FastAPI/graph_queries.py
+!/FastAPI/rdf_feature_provider.py
+!/FastAPI/import_public_data.py
+!/FastAPI/convert_model.py
+!/FastAPI/SCORE_EVIDENCE_INSPECTION.md
+!/FastAPI/tests/
+/FastAPI/tests/*
+!/FastAPI/tests/test_feature_assembler.py
+!/FastAPI/tests/test_time_key.py
+!/FastAPI/tests/test_graph_queries.py
+!/FastAPI/tests/test_import_public_data.py
+!/FastAPI/tests/test_model_conversion.py
+!/graph/
+/graph/*
+!/graph/schema.ttl
+!/graph/README.md

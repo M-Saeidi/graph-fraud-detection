@@ -1,0 +1,32 @@
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix usr: <https://example.org/fraud/users#> .
+@prefix card: <https://example.org/fraud/cards#> .
+@prefix tx: <https://example.org/fraud/transactions#> .
+@prefix feat: <https://example.org/fraud/features#> .
+
+usr:User a rdfs:Class ; rdfs:label "Customer" .
+card:Card a rdfs:Class ; rdfs:label "Payment card" .
+tx:Transaction a rdfs:Class ; rdfs:label "Transaction" .
+
+usr:UsersData.id a rdf:Property ; rdfs:domain usr:User ; rdfs:range xsd:integer .
+usr:UsersData.currentAge a rdf:Property ; rdfs:domain usr:User ; rdfs:range xsd:integer .
+usr:UsersData.creditScore a rdf:Property ; rdfs:domain usr:User ; rdfs:range xsd:integer .
+usr:UsersData.yearlyIncome a rdf:Property ; rdfs:domain usr:User ;
+    rdfs:comment "Source money lexical value; the provider normalizes it to a number." .
+
+card:CardsData.id a rdf:Property ; rdfs:domain card:Card ; rdfs:range xsd:integer .
+card:CardsData.creditLimit a rdf:Property ; rdfs:domain card:Card ;
+    rdfs:comment "Source money lexical value; the provider normalizes it to a number." .
+
+tx:TransactionsData.id a rdf:Property ; rdfs:domain tx:Transaction ; rdfs:range xsd:integer .
+tx:TransactionsData.cardId a rdf:Property ; rdfs:domain tx:Transaction ; rdfs:range xsd:integer .
+tx:TransactionsData.merchantId a rdf:Property ; rdfs:domain tx:Transaction ; rdfs:range xsd:integer .
+tx:TransactionsData.amount a rdf:Property ; rdfs:domain tx:Transaction ;
+    rdfs:comment "Source money lexical value; B1 normalizes it within SPARQL." .
+
+feat:transactionTimeKey a rdf:Property ; rdfs:domain tx:Transaction ; rdfs:range xsd:integer ;
+    rdfs:comment "Existing integer-day time scale in seconds, not Unix time; produced by time_key.py." .
+feat:isFraud a rdf:Property ; rdfs:domain tx:Transaction ; rdfs:range xsd:boolean ;
+    rdfs:comment "Only emit when a label exists. Absence is not a false label." .
