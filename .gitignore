@@ -6,6 +6,9 @@
 !/PROJECT_STORY.md
 !/RELEASE_CHECKLIST.md
 !/docs/
+/docs/*
+!/docs/workbench-preview.png
+!/docs/feature-stage-capture.svg
 !/pytest.ini
 !/requirements-test.txt
 !/requirements-rdf.txt

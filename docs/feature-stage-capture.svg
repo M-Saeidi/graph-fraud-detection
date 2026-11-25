@@ -1,0 +1,101 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1120 540" role="img" aria-labelledby="chart-title chart-desc">
+  <title id="chart-title">Source amount captured by feature stage and review capacity</title>
+  <desc id="chart-desc">Grouped horizontal bars compare A0, A plus B, and A plus B plus C for the top 0.1, 0.5, and 1 percent review queues. All panels use a shared scale from zero to 200,000 source amount units.</desc>
+  <rect width="1120" height="540" rx="8" fill="#f7faf8" />
+  <text x="44" y="42" fill="#087d72" font-family="Aptos, Segoe UI, sans-serif" font-size="11" font-weight="700" letter-spacing="1">EXPLORATORY EVALUATION · LOCAL COPY</text>
+  <text x="44" y="77" fill="#172622" font-family="Aptos Display, Aptos, Segoe UI, sans-serif" font-size="25" font-weight="650">Source amount captured by feature stage</text>
+  <text x="44" y="104" fill="#64746e" font-family="Aptos, Segoe UI, sans-serif" font-size="13">Same chronological test set · identical model settings · training-only negative sampling</text>
+
+  <g transform="translate(48 0)">
+    <text x="0" y="151" fill="#172622" font-family="Aptos Mono, Consolas, monospace" font-size="13" font-weight="700">TOP 0.1%</text>
+    <text x="0" y="171" fill="#64746e" font-family="Aptos, Segoe UI, sans-serif" font-size="11">1,783 transactions reviewed</text>
+    <g stroke="#e1e9e5" stroke-width="1">
+      <line x1="68" y1="190" x2="68" y2="375" />
+      <line x1="140.5" y1="190" x2="140.5" y2="375" />
+      <line x1="213" y1="190" x2="213" y2="375" />
+    </g>
+    <text x="0" y="220" fill="#172622" font-family="Aptos Mono, Consolas, monospace" font-size="11" font-weight="700">A0</text>
+    <text x="0" y="235" fill="#64746e" font-family="Aptos, Segoe UI, sans-serif" font-size="9">Static</text>
+    <rect x="68" y="209" width="17.03" height="16" rx="3" fill="#9bbcaf" />
+    <text x="220" y="221" fill="#172622" font-family="Aptos Mono, Consolas, monospace" font-size="10">23,521</text>
+    <text x="0" y="282" fill="#172622" font-family="Aptos Mono, Consolas, monospace" font-size="11" font-weight="700">A+B</text>
+    <text x="0" y="297" fill="#64746e" font-family="Aptos, Segoe UI, sans-serif" font-size="9">Card history</text>
+    <rect x="68" y="271" width="22.70" height="16" rx="3" fill="#388f7c" />
+    <text x="220" y="283" fill="#172622" font-family="Aptos Mono, Consolas, monospace" font-size="10">31,309</text>
+    <text x="0" y="344" fill="#172622" font-family="Aptos Mono, Consolas, monospace" font-size="11" font-weight="700">A+B+C</text>
+    <text x="0" y="359" fill="#64746e" font-family="Aptos, Segoe UI, sans-serif" font-size="9">Merchant history</text>
+    <rect x="68" y="333" width="70.96" height="16" rx="3" fill="#075e57" />
+    <text x="220" y="345" fill="#172622" font-family="Aptos Mono, Consolas, monospace" font-size="10">97,869</text>
+    <g fill="#87958f" font-family="Aptos Mono, Consolas, monospace" font-size="9">
+      <text x="68" y="397" text-anchor="middle">0</text>
+      <text x="140.5" y="397" text-anchor="middle">100k</text>
+      <text x="213" y="397" text-anchor="middle">200k</text>
+    </g>
+  </g>
+
+  <line x1="380" y1="137" x2="380" y2="420" stroke="#dce5e0" />
+
+  <g transform="translate(405 0)">
+    <text x="0" y="151" fill="#172622" font-family="Aptos Mono, Consolas, monospace" font-size="13" font-weight="700">TOP 0.5%</text>
+    <text x="0" y="171" fill="#64746e" font-family="Aptos, Segoe UI, sans-serif" font-size="11">8,915 transactions reviewed</text>
+    <g stroke="#e1e9e5" stroke-width="1">
+      <line x1="68" y1="190" x2="68" y2="375" />
+      <line x1="140.5" y1="190" x2="140.5" y2="375" />
+      <line x1="213" y1="190" x2="213" y2="375" />
+    </g>
+    <text x="0" y="220" fill="#172622" font-family="Aptos Mono, Consolas, monospace" font-size="11" font-weight="700">A0</text>
+    <text x="0" y="235" fill="#64746e" font-family="Aptos, Segoe UI, sans-serif" font-size="9">Static</text>
+    <rect x="68" y="209" width="42.01" height="16" rx="3" fill="#9bbcaf" />
+    <text x="220" y="221" fill="#172622" font-family="Aptos Mono, Consolas, monospace" font-size="10">57,946</text>
+    <text x="0" y="282" fill="#172622" font-family="Aptos Mono, Consolas, monospace" font-size="11" font-weight="700">A+B</text>
+    <text x="0" y="297" fill="#64746e" font-family="Aptos, Segoe UI, sans-serif" font-size="9">Card history</text>
+    <rect x="68" y="271" width="48.99" height="16" rx="3" fill="#388f7c" />
+    <text x="220" y="283" fill="#172622" font-family="Aptos Mono, Consolas, monospace" font-size="10">67,431</text>
+    <text x="0" y="344" fill="#172622" font-family="Aptos Mono, Consolas, monospace" font-size="11" font-weight="700">A+B+C</text>
+    <text x="0" y="359" fill="#64746e" font-family="Aptos, Segoe UI, sans-serif" font-size="9">Merchant history</text>
+    <rect x="68" y="333" width="117.50" height="16" rx="3" fill="#075e57" />
+    <text x="220" y="345" fill="#172622" font-family="Aptos Mono, Consolas, monospace" font-size="10">162,070</text>
+    <g fill="#87958f" font-family="Aptos Mono, Consolas, monospace" font-size="9">
+      <text x="68" y="397" text-anchor="middle">0</text>
+      <text x="140.5" y="397" text-anchor="middle">100k</text>
+      <text x="213" y="397" text-anchor="middle">200k</text>
+    </g>
+  </g>
+
+  <line x1="737" y1="137" x2="737" y2="420" stroke="#dce5e0" />
+
+  <g transform="translate(762 0)">
+    <text x="0" y="151" fill="#172622" font-family="Aptos Mono, Consolas, monospace" font-size="13" font-weight="700">TOP 1.0%</text>
+    <text x="0" y="171" fill="#64746e" font-family="Aptos, Segoe UI, sans-serif" font-size="11">17,830 transactions reviewed</text>
+    <g stroke="#e1e9e5" stroke-width="1">
+      <line x1="68" y1="190" x2="68" y2="375" />
+      <line x1="140.5" y1="190" x2="140.5" y2="375" />
+      <line x1="213" y1="190" x2="213" y2="375" />
+    </g>
+    <text x="0" y="220" fill="#172622" font-family="Aptos Mono, Consolas, monospace" font-size="11" font-weight="700">A0</text>
+    <text x="0" y="235" fill="#64746e" font-family="Aptos, Segoe UI, sans-serif" font-size="9">Static</text>
+    <rect x="68" y="209" width="60" height="16" rx="3" fill="#9bbcaf" />
+    <text x="220" y="221" fill="#172622" font-family="Aptos Mono, Consolas, monospace" font-size="10">82,731</text>
+    <text x="0" y="282" fill="#172622" font-family="Aptos Mono, Consolas, monospace" font-size="11" font-weight="700">A+B</text>
+    <text x="0" y="297" fill="#64746e" font-family="Aptos, Segoe UI, sans-serif" font-size="9">Card history</text>
+    <rect x="68" y="271" width="68.39" height="16" rx="3" fill="#388f7c" />
+    <text x="220" y="283" fill="#172622" font-family="Aptos Mono, Consolas, monospace" font-size="10">94,336</text>
+    <text x="0" y="344" fill="#172622" font-family="Aptos Mono, Consolas, monospace" font-size="11" font-weight="700">A+B+C</text>
+    <text x="0" y="359" fill="#64746e" font-family="Aptos, Segoe UI, sans-serif" font-size="9">Merchant history</text>
+    <rect x="68" y="333" width="140.45" height="16" rx="3" fill="#075e57" />
+    <text x="220" y="345" fill="#172622" font-family="Aptos Mono, Consolas, monospace" font-size="10">193,039</text>
+    <g fill="#87958f" font-family="Aptos Mono, Consolas, monospace" font-size="9">
+      <text x="68" y="397" text-anchor="middle">0</text>
+      <text x="140.5" y="397" text-anchor="middle">100k</text>
+      <text x="213" y="397" text-anchor="middle">200k</text>
+    </g>
+  </g>
+
+  <line x1="44" y1="433" x2="1076" y2="433" stroke="#dce5e0" />
+  <g transform="translate(44 463)" font-family="Aptos, Segoe UI, sans-serif" font-size="11">
+    <rect width="12" height="12" rx="2" fill="#9bbcaf" /><text x="20" y="10" fill="#40554c">A0 · Static profile</text>
+    <rect x="170" width="12" height="12" rx="2" fill="#388f7c" /><text x="190" y="10" fill="#40554c">A+B · Card history</text>
+    <rect x="355" width="12" height="12" rx="2" fill="#075e57" /><text x="375" y="10" fill="#40554c">A+B+C · Merchant history</text>
+  </g>
+  <text x="44" y="511" fill="#64746e" font-family="Aptos, Segoe UI, sans-serif" font-size="10">Amounts are source units; currency is unverified. Inputs are local and publisher byte identity is unverified.</text>
+</svg>

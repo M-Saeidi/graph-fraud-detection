@@ -42,12 +42,9 @@ exploratory feature-stage evaluation uses DuckDB over flat files.
 
 ## Preview
 
-The first image shows the synthetic local scoring workbench; the second shows
-the exploratory feature-stage evaluation view.
+The screenshot uses the synthetic local graph and model.
 
-![Transaction scoring workbench using synthetic graph data](docs/workbench-preview.png)
-
-![Exploratory A0, A+B, and A+B+C results with source-unit capture](docs/evaluation-preview.png)
+![Transaction assessment workbench with synthetic graph data](docs/workbench-preview.png)
 
 ## The engineering path
 
@@ -141,16 +138,11 @@ transactions.
 rows in the review queue. Currency is not verified; these are not confirmed
 dollars, recoveries, or savings.
 
-At a fixed 0.5% review capacity, the merchant-history model ranks more fraud
-cases and source amount into the queue in this exploratory run:
+The bars below use one shared scale, so compare like with like within each
+review-capacity group. This is a view of this run, not a claim that the graph
+representation itself caused the difference:
 
-```mermaid
-xychart-beta
-      title "Source amount captured in the top 0.5% review queue"
-      x-axis ["A0", "A+B", "A+B+C"]
-      y-axis "Source amount units" 0 --> 180000
-      bar [57946.42, 67430.96, 162069.86]
-```
+![Grouped comparison of source amount captured across A0, A+B, and A+B+C at 0.1%, 0.5%, and 1.0% review capacity](docs/feature-stage-capture.svg)
 
 Source amount captured at all tested review capacities:
 
