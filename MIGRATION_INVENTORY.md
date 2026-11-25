@@ -3,9 +3,15 @@
 Status: Steps 1-2 complete; Step 3 local RDF compatibility and bounded ingestion complete.
 The graph-to-feature path passes fixture tests and a 1,000-row local-file check.
 Publisher-verified inputs, full-history behavior, and persistent storage remain
-pending. Step 4 native conversion and same-runtime JSON round-trip checks pass;
-vendor-runtime parity, class mapping, and API integration remain open. Converted
-artifacts remain quarantined. This is not public-release clearance.
+pending. Step 4 native conversion and same-runtime JSON round-trip checks pass.
+Step 5a adds a local inference provider and tested graph-to-model scoring
+service. For a portfolio demo, native inference may proceed with the observed
+RapidMiner discrepancy disclosed: confidence differs on 30/72 rows and two
+decisions mismatch. Python XGBoost 1.4.1 through 2.1.4 produce identical native
+vectors, while the installed extension contains XGBoost4J 1.4.1. Exact vendor
+parity is not required for this portfolio demonstration, but no production or
+parity claim is supported. HTTP/React integration remains next. This is not
+public-release clearance.
 
 ## Scope and boundaries
 
@@ -15,7 +21,7 @@ artifacts remain quarantined. This is not public-release clearance.
 - The runnable public edition must not require company services or proprietary tools.
 - Do not copy existing Git history or initialize/push Git during this step.
 - This inventory is not a completed confidentiality audit or legal clearance.
-- Ownership of the implementation is user-confirmed; vendor redistribution rights are separate.
+- Ownership of the implementation and permission to use the model in the GitHub project are user-confirmed; runtime parity and public-release review remain separate.
 
 ## Evidence and working hypothesis
 
@@ -36,11 +42,15 @@ An additional 16 cases test the sanitized queries and local RDF provider,
 including graph-to-vector integration. Another 35 cases test bounded CSV/JSON
 ingestion, identity, validation, output, and reproducibility. Those 77 tests plus
 27 conversion cases pass in the isolated model-conversion environment: 104 total.
-A 1,000-row local-file import also matches direct CSV calculations for all 15
+A new local-inference boundary adds 15 focused tests, and a synthetic
+graph-to-model service test completes the path; the combined suite passes 120
+tests. A 1,000-row local-file import also matches direct CSV calculations for all 15
 features in one probe. This is subset consistency, not model parity. Native model
 conversion also preserves probabilities and margins exactly on 72 synthetic
 rows in XGBoost 2.1.4. Vendor-runtime parity, full service orchestration, and
-persistent-store compatibility remain untested.
+persistent-store compatibility remain untested. The local graph-to-model service
+is covered by one synthetic integration test; HTTP deployment orchestration is
+not implemented.
 
 ## Candidate inventory
 
@@ -55,13 +65,16 @@ components are not cleared merely because they appear in this table.
 | FastAPI/feature_service.py and scoring_service.py | Reuse/adapt | Review imports and constructor coupling; substitute providers without changing scoring semantics. |
 | FastAPI/main.py and tests/test_api.py | Reuse/adapt | Remove vendor startup requirements and identifying health output; review validation, errors, CORS, and route protection. |
 | FastAPI/anzo_mcp_client.py | Selected query behavior migrated | New graph_queries.py and rdf_feature_provider.py pass synthetic RDFLib checks with public namespaces. Casts and conditional aggregates adapted; original transport and diagnostics excluded. Persistent-store parity pending. |
-| FastAPI/rapidminer_client.py | Contract inspected; replacement pending | Preserve prediction and both class confidences. The client parses a returned label rather than computing a threshold. Verify native class encoding, threshold/ties, precision, missing values, and error behavior. |
+| FastAPI/rapidminer_client.py | Contract inspected; replacement blocked on wrapper parity | AI Studio labels follow confidence(true) >= 0.5 on 72 probes. The exact model artifact and all input rows are hash/value matched, but native confidence differs on 30 rows by >0.01 and two decisions differ. The installed extension embeds XGBoost4J 1.4.1; Python XGBoost 1.4.1, 1.4.2, 1.7.6, 2.0.3, and 2.1.4 produce identical native vectors. Inspect Java wrapper matrix construction/output transformation next. |
+| FastAPI/rapidminer_client.py | Contract inspected; retained as comparison reference | The local portfolio demo uses XGBoostInferenceProvider; it must disclose the 30/72 confidence differences and 2/72 decision mismatches rather than claim parity. |
 | fraud-ui/fraud-ui/src and frontend configuration | Reuse/adapt | Review sample provenance, text, assets, URLs, and lockfile registry references; retain scoring and monitoring workflow. |
 | FastAPI/metrics.py, metrics_store.py, monitoring, load_tests | Reuse/adapt | Remove identifying labels, fixtures, and endpoints; distinguish process-local metrics from aggregate service metrics. |
 | FastAPI/auth.py, rbac.py and related tests | Reuse after scoring slice | Review identity-provider assumptions and test credentials; do not migrate local token issuance by default. |
 | FastAPI/case_service.py, models.py, database.py, alembic and tests | Defer | Optional investigation scope; retain existing implementation when scheduled, with clean database configuration. |
 | Root AI Studio process definitions | Reference selectively | Review XML for credentials, local paths, connections, scripts, and training/evaluation semantics; translate only the selected pipeline if needed. |
-| Existing model artifact | Native conversion tested; remains quarantined | XGBoost 2.1.4 loads the legacy payload and saves/reloads JSON with zero probability/margin differences on 72 synthetic probes. Native feature count, objective, booster, and 150 rounds match expectations. Vendor parity, class mapping, final serving runtime, and redistribution review remain open. |
+| Existing model artifact | Use in GitHub authorized by owner; native conversion tested; demo scoring path implemented | Native JSON round-trips exactly in XGBoost 2.1.4. AI Studio's repository file matches the converted source hash, and all probe inputs match, but confidence differs on 30 rows and two decisions differ. This is acceptable only for a clearly disclosed portfolio demo, not production parity. The converted artifact remains ignored under local-data and is not included in a fresh checkout. |
+| FastAPI/local_inference.py and tests/test_local_inference.py | Migrated/adapted | Vendor-independent XGBoost loader and prediction shape. It rejects feature drift and invalid values. It does not infer class semantics; native probability mapping and threshold remain configuration gates. |
+| FastAPI/local_scoring_service.py and tests/test_local_scoring_service.py | Local demo orchestration implemented | Combines RDF A0/B1/C1, the 15-feature assembler, and injected native inference; a synthetic integration test passes. No HTTP API or React UI is connected yet. |
 | Existing model/data tables and MLflow databases | Exclude by default | Regenerate public artifacts from documented inputs; local experiment metadata is not publication evidence. |
 | Existing project summaries and runbooks | Rewrite public narrative | Reuse verified technical facts, not internal narrative, screenshots, deployment details, or unsupported results. |
 | Connections, environment files, certificate/key containers | Exclude | Never copy, print, or stage their contents. Even encrypted credentials and key containers remain excluded. |
@@ -98,12 +111,14 @@ License reference: https://www.apache.org/licenses/LICENSE-2.0
 | Boundary | First candidate | Decision gate |
 | --- | --- | --- |
 | Graph Studio | RDFLib for local checks; Fuseki remains a persistent-store candidate | Java and Docker unavailable. Fixture and bounded local-file checks pass. No Fuseki validation, full-data import, performance result, or full ontology equivalence is claimed. |
-| AI Hub | Native XGBoost inference in the existing API, subject to verification | Legacy-to-JSON conversion and native round-trip checks pass in 2.1.4. Verify vendor class mapping, threshold behavior, original-runtime predictions, and the chosen serving runtime before API integration. Retraining remains a fallback. |
+| AI Hub | Native inference accepted for a disclosed portfolio demo | Use the hash-matched converted model and observed fraud-positive mapping/cutoff for the demo. Clearly disclose the 30/72 confidence differences and 2/72 decision mismatches. Do not claim production suitability or exact vendor parity; further wrapper investigation is optional unless exact parity becomes a requirement. |
 | AI Studio | Existing process as a reproducibility specification | No blanket rewrite. Retrain only when needed, documenting preprocessing, seeds, temporal splits, parameters, threshold, and dependencies. |
 
-An exported model must pass a parity check on reviewed feature vectors, including
-probabilities within a declared tolerance and classification decisions. A newly
-trained model receives a new version and evaluation; it is not the same model.
+For production inference, an exported model must pass a parity check on reviewed
+feature vectors, including probabilities within a declared tolerance and
+classification decisions. For the portfolio demo, native inference may be used
+with the observed discrepancy clearly disclosed. A newly trained model receives
+a new version and evaluation; it is not the same model.
 
 Maintain labeled-population membership and strict earlier-time card history, and the existing merchant eligibility
 rule: same merchant, present fraud label, and at least seven days of lag for the
@@ -119,8 +134,8 @@ do not extend to unselected transactions or arbitrary externally loaded RDF.
 1. Complete: establish this inventory and the initial deny-by-default staging policy.
 2. Complete: migrate pure feature assembly, time conversion, and adapted tests; establish an independent test environment and pass 26 offline checks.
 3. Bounded local check complete: 16 RDF cases and 35 ingestion cases pass alongside the prior 26 tests. A deterministic 1,000-row local prefix was imported and checked. Publisher-verified source acquisition, full-history validation, and persistent storage remain separate gates.
-4. Native conversion complete: isolated 2.1.4 legacy loading and JSON round-trip pass on 72 synthetic probes. An ignored CSV contains the exact inputs for offline vendor scoring. Next obtain trusted reference predictions, resolve class/threshold semantics, and validate the selected serving runtime before integration.
-5. Migrate the reviewed FastAPI scoring path and React scoring/monitoring UI; verify an end-to-end local demo.
+4. Native conversion and local graph-to-model scoring service complete. Offline AI Studio reference uses the hash-matched model and exact features; labels follow confidence(true) >= 0.5, but confidence differs on 30 rows and two decisions mismatch. Accept this for a clearly labeled portfolio demo; exact wrapper parity is no longer a blocker unless it becomes a requirement.
+5. Add a thin local FastAPI endpoint around LocalFraudScoringService, then connect the React scoring/monitoring UI and verify an end-to-end local portfolio demo with the parity caveat visible.
 6. Add reproducible data preparation, CI, documentation, licensing, and release review; investigate case management separately if scheduled.
 
 ## Current evidence
@@ -131,9 +146,9 @@ was created here; pytest, RDFLib, and parser dependencies were installed from pu
 The original environment was not reused as the test environment.
 
 Model conversion uses a separate ignored .venv-model-conversion, with pinned
-XGBoost, NumPy, and SciPy dependencies. Run the full 104-test gate there. Four
-native tests skip when the optional dependencies are absent; such a run is not
-the full conversion gate. The test suite trains only a small synthetic booster
+XGBoost, NumPy, and SciPy dependencies. Run the full 120-test gate there. Native
+tests skip when the optional dependencies are absent; such a run is not the full
+conversion gate. The test suite trains only a small synthetic booster
 and never requires the original model. Generated conversion bundles and probe
 results remain ignored under local-data.
 
@@ -146,9 +161,10 @@ scanning and actual Git ignore/staging checks remain required.
 
 No original files modified or original application modules executed. No raw
 datasets, original model wrapper, certificates, credentials, vendor adapters,
-API entry point, or UI copied. The reviewed native booster was loaded locally;
+HTTP API entry point, or UI copied. The local scoring orchestration service now
+exists; it has not been connected to HTTP or the UI. The reviewed native booster was loaded locally;
 cleaned JSON and synthetic parity probes were generated only under ignored
 local-data, alongside the earlier RDF sample. No company services were called,
-Git repository initialized, or publication performed. Vendor model parity,
-full-data/persistent-store compatibility, service orchestration, and the
-end-to-end application remain unverified. The public application is not runnable yet.
+Git repository initialized, or publication performed. Exact vendor model parity,
+full-data/persistent-store compatibility, HTTP integration, and the end-to-end
+application remain unverified. The public application is not runnable yet.

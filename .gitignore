@@ -8,6 +8,7 @@
 !/requirements-test.txt
 !/requirements-rdf.txt
 !/requirements-model-conversion.txt
+!/requirements-runtime.txt
 !/FastAPI/
 /FastAPI/*
 !/FastAPI/feature_assembler.py
@@ -16,6 +17,8 @@
 !/FastAPI/rdf_feature_provider.py
 !/FastAPI/import_public_data.py
 !/FastAPI/convert_model.py
+!/FastAPI/local_inference.py
+!/FastAPI/local_scoring_service.py
 !/FastAPI/SCORE_EVIDENCE_INSPECTION.md
 !/FastAPI/tests/
 /FastAPI/tests/*
@@ -24,6 +27,8 @@
 !/FastAPI/tests/test_graph_queries.py
 !/FastAPI/tests/test_import_public_data.py
 !/FastAPI/tests/test_model_conversion.py
+!/FastAPI/tests/test_local_inference.py
+!/FastAPI/tests/test_local_scoring_service.py
 !/graph/
 /graph/*
 !/graph/schema.ttl
