@@ -1,15 +1,16 @@
-# Public Release Gates
+# Public Release Readiness
 
-This is a planning checklist, not a statement that the project is safe to publish.
+Use this checklist before sharing a release. Passing it is a review step, not a
+guarantee that the project is risk-free.
 
-## For each migration batch
+## For each project change
 
-- [ ] Confirm the batch is needed for the React-only, open-source scoring path.
+- [ ] Confirm the change supports the focused, open-source scoring use case.
 - [ ] Review the complete source and fixtures locally; report locations/categories, not secrets.
 - [ ] Remove corporate hosts, accounts, tenant/project identifiers, private paths, and internal narrative.
 - [ ] Review comments, examples, assets, metadata, lockfiles, URLs, and error/health output.
 - [ ] Establish provenance and redistribution rights for any data, model, or third-party asset.
-- [ ] Copy only cleared files and record adaptations in the inventory.
+- [ ] Include only cleared files and document important design decisions.
 - [ ] Extend the .gitignore allowlist narrowly; never allow entire unreviewed trees.
 - [ ] Run focused checks in the destination without reading the original environment configuration.
 - [ ] Preserve feature contracts or explicitly version and evaluate intentional changes.
@@ -31,7 +32,7 @@ This is a planning checklist, not a statement that the project is safe to publis
 - [ ] Run backend tests, frontend checks, and a browser end-to-end scoring test in CI.
 - [ ] Publish only reproducible evaluation results and clearly label fixtures and limitations.
 - [ ] Before public hosting, protect costly endpoints, restrict CORS, disable demo token issuance, and redact logs.
-- [ ] Obtain an explicit publication decision; local migration does not authorize a push.
+- [ ] Get an explicit publication decision before a public push.
 
 Secret scanning reduces risk but does not prove absence of confidential material.
 If a credential is discovered in a public artifact, revoke/rotate it through the

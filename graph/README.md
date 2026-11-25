@@ -1,21 +1,20 @@
-# RDF Compatibility Layer
+# RDF Feature Model and Import
 
-This layer runs reviewed A0/B1/C1 feature queries against RDFLib's in-memory
-graph. It is a small-data compatibility harness, not a deployed replacement for
-a persistent RDF server. Java and Docker were unavailable locally; Apache Jena
+This guide describes the local graph model used to retrieve A0/B1/C1 features.
+RDFLib runs the SPARQL queries against an in-memory graph for the scoring
+prototype and small fixtures. It is not a persistent graph service; Apache Jena
 Fuseki has not been installed or tested.
 
 ## Vocabulary versus data
 
-[schema.ttl](schema.ttl) is a minimal RDFS description reconstructed from the
-predicates used by the reviewed queries, not an export of the full original
-ontology. Private namespace IRIs were replaced with reserved example namespaces;
-predicate local names were retained to make migration comparisons straightforward.
+[schema.ttl](schema.ttl) defines a minimal, task-specific RDFS vocabulary for
+the customer, card, transaction, and feature values used by this scoring path.
+It uses reserved example namespaces and does not claim to model every concept
+in a banking or fraud domain.
 
 The vocabulary describes customer, card, and transaction resources. Card and
-merchant references remain numeric ID literals, matching the existing queries.
-No new ownership edges or inference rules were invented. A0 uses independent
-customer/card lookups and does not verify ownership.
+merchant references are numeric ID literals in this feature contract. A0 uses
+independent customer/card lookups and does not verify ownership.
 
 | Logical field | Predicate | Mapping contract |
 | --- | --- | --- |
@@ -26,7 +25,7 @@ customer/card lookups and does not verify ownership.
 | Transaction ID | tx:TransactionsData.id | Canonical integer |
 | Card / merchant reference | tx:TransactionsData.cardId / tx:TransactionsData.merchantId | Integer IDs; missing cards are not fabricated |
 | Amount | tx:TransactionsData.amount | Money lexical value normalized in SPARQL |
-| Time key | feat:transactionTimeKey | Migrated integer-day scale in seconds, not Unix time |
+| Time key | feat:transactionTimeKey | Custom day-based integer scale in seconds, not Unix time |
 | Fraud label | feat:isFraud | RDF boolean only when a label is present; absence is not false |
 
 Prefix IRIs are declared in the schema. They are identifiers, not services to
@@ -35,10 +34,9 @@ constraints. The importer validates selected identities, required references,
 and value encodings. SHACL validation and complete ontology comparison remain
 future work. No reasoning is required here.
 
-The intended public source is the attributed Kaggle dataset in the
-[inventory](../MIGRATION_INVENTORY.md). A local-file prefix has been imported;
-its original download identity is unverified. No raw files are distributed.
-Hand-authored Turtle fixtures in
+The importer accepts a caller-provided local dataset directory. The previously
+used local-file prefix has not been authenticated against the publisher; no raw
+files are distributed. Hand-authored Turtle fixtures in
 [the query tests](../FastAPI/tests/test_graph_queries.py) test known expected
 results, not real-world accuracy or source-data provenance.
 
@@ -50,13 +48,14 @@ balance classes, or reconstruct complete history. It loads only users/cards
 referenced by that prefix and streams the entire fraud-label mapping while
 retaining only selected labels. Unselected transactions are not validated.
 
-Verified local headers and sample formats map as follows. The Kaggle page
-confirms the file set and version, not the byte identity of these local files.
+The importer reads the following fields from the caller-provided files. The
+Kaggle page confirms a version and file set, not the byte identity of the local
+files.
 
 | Input | Selected columns | RDF mapping |
 | --- | --- | --- |
 | transactions_data.csv | id, card_id, merchant_id, amount | Corresponding TransactionsData predicates above; integers and xsd:decimal money |
-| transactions_data.csv | date | Exact naive YYYY-MM-DD HH:MM:SS, converted with the existing time-key function |
+| transactions_data.csv | date | Exact naive YYYY-MM-DD HH:MM:SS, converted by `time_key.py` |
 | transactions_data.csv | client_id | Reference/ownership validation only; not emitted |
 | users_data.csv | id, current_age, credit_score, yearly_income | Corresponding UsersData predicates; integers and xsd:decimal money |
 | cards_data.csv | id, credit_limit | Corresponding CardsData predicates; integer and xsd:decimal money |
@@ -102,12 +101,11 @@ CSV rows for all 15 features, using a synthetic amount and later cutoff.
 This checks transformation consistency only. It is not a training dataset,
 fraud demonstration, full-history result, or estimate of model performance.
 
-Public attribution remains ComputingVictor's Kaggle listing, which credits
-CaixaBank Tech's 2024 AI Hackathon and lists Apache 2.0. Before redistributing
-any subset, verify acquisition provenance, preserve applicable license/notices,
-and identify modifications. This implementation distributes no dataset records.
+The public listing names its contributor and declares Apache 2.0. Before
+redistributing any subset, verify the acquired files and preserve applicable
+license notices and attribution. This project distributes no dataset records.
 
-## Retained feature rules
+## Feature rules
 
 - A0 requires exactly one customer/card attribute combination.
 - B1 requires a card ID, transaction ID, amount, time key, and a present label.
@@ -115,8 +113,8 @@ and identify modifications. This implementation distributes no dataset records.
   strictly earlier than the scoring time.
 - B1 counts distinct transaction IDs but averages all matching solution rows.
   Duplicate resources or multivalued properties can bias the average. Ingestion
-  must establish canonical identity and single-valued attributes; the migration
-  does not silently redefine this average.
+  must establish canonical identity and single-valued attributes; this feature
+  contract does not silently redefine the average.
 - C1 requires the same merchant, a present boolean label, and at least 604800
   seconds of lag for the entire eligible population. Card IDs are optional.
 - C1 counts distinct transaction/card IDs. A fraud transaction without a card
@@ -126,19 +124,18 @@ and identify modifications. This implementation distributes no dataset records.
 These rules describe the reviewed queries. They do not prove real-time label
 availability, point-in-time demographics, or full offline/online parity.
 
-## Observed portability changes
+## RDFLib implementation notes
 
-1. RDFLib 7.1.4 did not evaluate the original xsd:long SPARQL constructor. B1
-   uses xsd:integer for valid integer-valued time keys. Validate that domain on import.
-2. Error-valued conditional distinct counts inflated C1 fraud counts in this
-   engine. Two filtered aggregate subqueries now compute total and fraudulent
-   counts over the same eligible population without error sentinels.
-3. pyparsing 3.3.3 emitted upstream deprecation warnings. The tested parser is
-   pinned to 3.2.3; all tests pass with warnings treated as errors.
+1. The tested RDFLib runtime requires `xsd:integer` for integer-valued time
+  keys in the B1 filter.
+2. C1 uses two filtered aggregate subqueries over the same eligible population
+  to avoid engine-dependent error sentinels in conditional distinct counts.
+3. pyparsing 3.3.3 emitted upstream deprecation warnings; the tested parser is
+  pinned to 3.2.3, and tests pass with warnings treated as errors.
 
-No corporate transport, credentials, response dumps, or endpoints were migrated.
-The provider accepts an already-loaded Graph and returns existing dictionaries.
-Cross-engine equivalence and full-data performance have not been established.
+The provider accepts an already-loaded graph and returns feature dictionaries.
+It has no network transport or credential handling. Cross-engine equivalence,
+persistent-store behavior, and full-data performance have not been established.
 
 ## Validation and next gate
 

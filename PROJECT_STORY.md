@@ -1,0 +1,91 @@
+# From Transaction Signals to Graph-Backed Scoring
+
+## Why build this?
+
+A transaction amount and a customer's static attributes do not describe the
+whole context of a payment. Earlier card activity can show how unusual an
+amount is for that card. Merchant history can add another signal, provided the
+history is selected using a defensible time cutoff.
+
+This project takes one fraud-scoring use case and builds a small, inspectable
+open-source implementation around it. The practical question is simple: can a
+local scorer retrieve useful relationship history, turn it into stable model
+inputs, and show the evidence behind a result?
+
+## Why build it in steps?
+
+1. **Define the input contract.** A0 starts with amount, income, credit limit,
+   age, and credit score. Writing down names, ordering, units, and defaults
+   prevents the graph query and model from quietly disagreeing about a feature.
+2. **Add history without looking ahead.** B1 adds earlier card activity. C1
+   adds merchant aggregates from labeled transactions at least seven days old.
+   The temporal rules are explicit and tested; the data does not contain label
+   arrival timestamps, so the seven-day delay remains an assumption.
+3. **Represent relationships as graph data.** A small RDF vocabulary and
+   read-only SPARQL queries connect transactions with cards, customers, and
+   merchants. The importer accepts a bounded set of fields and discards
+   unrelated columns. This makes the feature path inspectable; it does not, by
+   itself, prove better accuracy or better performance than SQL.
+4. **Separate features from inference.** A fixed 15-feature interface feeds a
+   native XGBoost model. The local provider checks names and values at the
+   boundary, so feature drift fails clearly instead of producing a plausible
+   score from the wrong columns.
+5. **Make one complete workflow usable.** FastAPI exposes local health,
+   synthetic graph defaults, and transaction scoring. A React workbench lets a
+   user change the input and inspect the returned history evidence and timings.
+   This is one scoring flow, not a complete case-management application.
+6. **Design a fair feature comparison.** The evaluation runner trains fresh
+   A0, A+B, and A+B+C models using one chronological split and identical model
+   settings. It currently computes history features with DuckDB over flat files,
+   not through RDF. Its local dataset copy is not authenticated against the
+   publisher, so its metrics remain private and are not performance claims.
+
+## Toolchain and scope
+
+The original solution used Graph Studio, AI Studio, AI Hub, and Mendix for
+different parts of its workflow. This repository is not a port of that system
+or those products. It rebuilds one fraud-scoring path with smaller tools that
+can be inspected and run locally.
+
+| Earlier role | This project's implementation | Deliberate limit |
+| --- | --- | --- |
+| [Graph Studio](https://www.siemens.com/en-us/products/rapidminer/graph-studio/) for graph exploration and queries | RDFLib, a small RDF vocabulary, and SPARQL feature queries | In-memory graph for this scoring slice; no persistent graph service or product parity |
+| [AI Studio](https://www.siemens.com/en-us/products/rapidminer/ai-studio/) for model workflows | Python/XGBoost inference plus a DuckDB-based evaluation runner | No managed experiment workspace; evaluation features are SQL-generated |
+| [AI Hub](https://docs.rapidminer.com/latest/hub/) for model serving | Local XGBoost provider behind FastAPI | No model registry, managed deployment, scaling, or hosted monitoring |
+| [Mendix](https://www.mendix.com/) for application workflows | A React scoring workbench for one scoring flow | No Mendix runtime or broad application/workflow parity |
+
+The included model is an owner-authorized conversion of an existing XGBoost
+artifact, not a newly trained model. Its native predictions do not exactly
+match the original AI Studio scorer: on 72 synthetic comparison rows, confidence
+differed on 30 and two binary decisions differed. The local API is therefore a
+disclosed demonstration path, not production-equivalent scoring.
+
+## What value are we testing?
+
+The design makes customer, card, and merchant context explicit at scoring time.
+It also gives each feature a defined meaning and exposes the evidence used for
+one local prediction. The A0-to-A+B-to-A+B+C experiment is intended to test
+whether the added historical signals help ranking fraud cases under a fixed
+review budget.
+
+That value is still a hypothesis, not a result. The large evaluation
+used DuckDB-generated features, the RDF comparison covered only five sampled
+rows, and the local source files have not been verified against publisher
+checksums. The current evidence supports the architecture and implementation
+work, not a claim of model uplift or an advantage for graph technology over
+relational processing.
+
+## What's included (and what isn't)
+
+Included are the feature contract, a minimal RDF query path, bounded local data
+import, native model loading, a local API, a React scoring view, and tests for
+the isolated components. The project does not include the wider original
+application, its enterprise services, a production graph platform, a hosted
+model platform, or a full Mendix application. No raw transaction dataset is
+distributed.
+
+The small tracked graph is invented fixture data for a clean local run. The
+dataset provenance review, full SQL/RDF parity, browser end-to-end testing, and
+public deployment controls remain open. See the [README](README.md) for setup
+and the [evidence report](FastAPI/SCORE_EVIDENCE_INSPECTION.md) for measured
+checks and limitations.

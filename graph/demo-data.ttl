@@ -1,0 +1,46 @@
+@prefix usr: <https://example.org/fraud/users#> .
+@prefix card: <https://example.org/fraud/cards#> .
+@prefix tx: <https://example.org/fraud/transactions#> .
+@prefix feat: <https://example.org/fraud/features#> .
+@prefix demo: <https://example.org/fraud/demo/> .
+
+# Small synthetic fixture for a clean-checkout local demonstration.
+# These records are invented and are not copied from the source dataset.
+
+demo:user-1 a usr:User ;
+    usr:UsersData.id 1 ;
+    usr:UsersData.currentAge 35 ;
+    usr:UsersData.creditScore 650 ;
+    usr:UsersData.yearlyIncome "$60000" .
+
+demo:card-10 a card:Card ;
+    card:CardsData.id 10 ;
+    card:CardsData.creditLimit "$5000" .
+
+demo:card-11 a card:Card ;
+    card:CardsData.id 11 ;
+    card:CardsData.creditLimit "$8000" .
+
+demo:txn-101 a tx:Transaction ;
+    tx:TransactionsData.id 101 ;
+    tx:TransactionsData.cardId 10 ;
+    tx:TransactionsData.merchantId 20 ;
+    tx:TransactionsData.amount "$10" ;
+    feat:transactionTimeKey 212444640000 ;
+    feat:isFraud false .
+
+demo:txn-102 a tx:Transaction ;
+    tx:TransactionsData.id 102 ;
+    tx:TransactionsData.cardId 10 ;
+    tx:TransactionsData.merchantId 20 ;
+    tx:TransactionsData.amount "$30" ;
+    feat:transactionTimeKey 212444726400 ;
+    feat:isFraud true .
+
+demo:txn-103 a tx:Transaction ;
+    tx:TransactionsData.id 103 ;
+    tx:TransactionsData.cardId 11 ;
+    tx:TransactionsData.merchantId 20 ;
+    tx:TransactionsData.amount "$90" ;
+    feat:transactionTimeKey 212444812800 ;
+    feat:isFraud false .

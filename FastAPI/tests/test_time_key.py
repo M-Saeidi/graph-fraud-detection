@@ -6,7 +6,7 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from time_key import datetime_to_transaction_time_key
+from time_key import datetime_to_transaction_time_key, transaction_time_key_to_datetime
 
 
 @pytest.mark.unit
@@ -48,3 +48,22 @@ def test_time_of_day_adds_seconds_since_midnight():
 def test_microseconds_are_discarded_for_backward_compatibility():
     timestamp = datetime(2000, 1, 1, 6, 7, 8)
     assert datetime_to_transaction_time_key(timestamp.replace(microsecond=999_999)) == datetime_to_transaction_time_key(timestamp)
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize("timestamp", [
+    datetime(1970, 1, 1),
+    datetime(2000, 2, 29, 23, 59, 59),
+    datetime(2020, 1, 3, 12, 34, 56),
+    datetime(2026, 11, 25, 15, 59),
+])
+def test_time_key_round_trips_to_naive_datetime(timestamp):
+    time_key = datetime_to_transaction_time_key(timestamp)
+    assert transaction_time_key_to_datetime(time_key) == timestamp
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize("invalid_key", [True, 1.5, "123"])
+def test_time_key_inverse_rejects_non_integer_values(invalid_key):
+    with pytest.raises(TypeError, match="must be an integer"):
+        transaction_time_key_to_datetime(invalid_key)

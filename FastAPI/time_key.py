@@ -80,3 +80,24 @@ def datetime_to_transaction_time_key(
         * 60
         + second
     )
+
+
+def transaction_time_key_to_datetime(transaction_time_key: int) -> datetime:
+    """Convert the integer day/seconds key back to a naive Gregorian time."""
+
+    if type(transaction_time_key) is not int:
+        raise TypeError("transaction_time_key must be an integer.")
+
+    day_number, seconds_of_day = divmod(transaction_time_key, 86400)
+    shifted_day = day_number + 32044
+    century = (4 * shifted_day + 3) // 146097
+    day_within_century = shifted_day - (146097 * century) // 4
+    year_day = (4 * day_within_century + 3) // 1461
+    day_within_year = day_within_century - (1461 * year_day) // 4
+    month_index = (5 * day_within_year + 2) // 153
+    day = day_within_year - (153 * month_index + 2) // 5 + 1
+    month = month_index + 3 - 12 * (month_index // 10)
+    year = 100 * century + year_day - 4800 + month_index // 10
+    hour, seconds_of_hour = divmod(seconds_of_day, 3600)
+    minute, second = divmod(seconds_of_hour, 60)
+    return datetime(year, month, day, hour, minute, second)

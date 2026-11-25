@@ -1,0 +1,3 @@
+-r requirements-runtime.txt
+ijson==3.3.0
+duckdb==1.4.3

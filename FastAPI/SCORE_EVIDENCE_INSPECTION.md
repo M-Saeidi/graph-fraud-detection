@@ -1,169 +1,223 @@
-# Model Conversion, Native Round-Trip, and Local Inference
+# Training Evaluation and RDF/SQL Boundary
 
-## Local inference milestone
+## Bottom line
 
-A new vendor-independent `XGBoostInferenceProvider` now loads a native JSON model,
-validates the exact 15-feature contract, and returns the existing prediction,
-fraud-confidence, and non-fraud-confidence fields. It requires an explicit
-`native_probability_is_fraud` setting and configurable threshold; it does not
-assume native probability semantics from the model metadata.
+The local scoring demo does use an RDF graph: `RdfFeatureProvider` runs
+SPARQL queries for A0, B1, and C1, assembles the 15-feature vector, and passes
+it to XGBoost through `LocalFraudScoringService`. The tracked graph is a small
+synthetic demo fixture.
 
-The provider was verified by 15 focused tests, and the combined suite passed
-120 tests with warnings as errors. Provider tests cover exact feature names,
-numeric/finite values, missing/extra features, threshold and mapping flags,
-missing models, feature drift, and stable prediction output.
+The exploratory multi-million-row evaluation did **not** use RDF. It read flat
+CSV/JSON inputs and constructed same-intent historical features with DuckDB SQL
+window functions. No 13-million-row dataset was loaded into an RDF graph. This
+run can explore whether adding card/merchant history features helps prediction;
+it cannot demonstrate that RDF itself improves model performance or that the
+SQL and RDF paths produce identical feature values across the full dataset.
 
-`LocalFraudScoringService` now composes RDF A0/B1/C1 retrieval, the existing
-15-feature assembler, and local XGBoost inference. One integration test verifies
-the full graph-to-model path and response/evidence/timing shape using a synthetic
-graph and synthetic test model. The response explicitly identifies its
-`not_exactly_equivalent_to_ai_studio` demo status.
+## Dataset provenance gate
 
-Portfolio-demo decision: proceed with this native model to demonstrate the
-project pipeline, provided the observed RapidMiner mismatch is disclosed and no
-accuracy/parity claim is made. Confidence differs on 30/72 probes and the 0.5
-decisions differ on two. This is not production scoring or proof of exact vendor
-reproduction. The local service is not yet connected to HTTP/React.
+As checked on 2026-11-25, Kaggle's public metadata reports dataset version 1,
+Apache 2.0, and a total archive size of 1,418,293,535 bytes. The metadata
+response does not expose per-file checksums. The four files consumed by the
+evaluator total 1,418,288,819 bytes; the remaining 4,716 bytes match the local
+`mcc_codes.json`, which the evaluator does not consume. This is a size
+consistency check only, not byte-level authentication.
 
----
+The public listing describes financial transaction data, but does not
+independently establish that the local files are exactly that release or
+unrelated to any company data. The declared license is useful
+metadata, not proof of source identity or clearance of potentially overlapping
+records. Until the source is independently verified, keep raw data and numeric
+evaluation results out of the repository and do not claim publication
+clearance.
 
-# Model Conversion and Native Round-Trip Results
+## Confidentiality scan
 
-## Outcome
+Gitleaks v8.30.1 was downloaded to a temporary directory, its archive SHA-256
+was checked against the official GitHub release metadata, and the executable
+was removed after use. A redacted filesystem scan found zero findings across
+23 selected destination candidate paths: backend source/tests, frontend source
+and top-level config/lockfiles, the synthetic graph/model candidates, root
+documentation, and requirements. It excluded local datasets/output, virtual
+environments, generated dependencies/build output, and Git history. This does
+not replace manual review for organization-specific terms or a history scan
+before any public push.
 
-The reviewed legacy XGBoost booster loads successfully in XGBoost 2.1.4 and
-converts to native JSON without retraining. Reloading that JSON produces exactly
-the same probabilities and raw margins on 72 deterministic synthetic feature
-rows. This supports reuse, but is not yet proof of equivalence with the vendor
-runtime. The project owner confirms the model may be used in the GitHub project;
-that permission does not resolve the remaining prediction-parity issue.
+## Project and platform scope
 
-The original model remains unchanged. The converter reads its JSON wrapper,
-decodes the booster in memory, and writes only to ignored destination storage.
-No company endpoint, original application module, or vendor runtime was executed.
+This repository is a focused implementation of one fraud-scoring use case, not
+a source-by-source copy of the broader application. The wider workflow used
+Graph Studio, AI Studio, AI Hub, and Mendix in different portions. Here, the
+replacements cover only this scoring slice:
 
-## Implementation
+- [Graph Studio](https://www.siemens.com/en-us/products/rapidminer/graph-studio/)'s graph-query role is represented by RDFLib and SPARQL over a
+  small in-memory graph. Persistent graph service behavior is not established.
+- [AI Studio](https://www.siemens.com/en-us/products/rapidminer/ai-studio/)'s selected model workflow is represented by native XGBoost
+  inference and a local evaluation runner. The existing model is an authorized
+  conversion; exact AI Studio output parity is not achieved.
+- [AI Hub](https://docs.rapidminer.com/latest/hub/)'s selected serving role is represented by a local inference provider
+  behind FastAPI. There is no model registry, managed hosting, or operations
+  layer here.
+- [Mendix](https://www.mendix.com/)'s selected interaction is represented by a React scoring workbench.
+  It implements one workflow, not a full low-code application replacement.
 
-- [convert_model.py](convert_model.py) validates the reviewed wrapper version/type, exact numeric feature order/types, separate label dictionary, objective, iteration count, payload signature, and size before native loading.
-- Native checks confirm 15 features, binary:logistic, gbtree, and 150 boosted rounds. Arbitrary booster attributes are removed; public feature names and numeric types are set before saving.
-- The converter compares original and reloaded predictions, raw margins, and a diagnostic threshold. It refuses existing output and restricts output to this edition's local-data directory.
-- [test_model_conversion.py](tests/test_model_conversion.py) contains 27 cases. Native tests train a small synthetic booster; they do not use or distribute the original model.
-- [local_scoring_service.py](local_scoring_service.py) composes the injected RDF feature provider and XGBoost inference provider without HTTP or vendor dependencies.
-- [test_local_scoring_service.py](tests/test_local_scoring_service.py) verifies the complete synthetic graph-to-model demo path.
-- [../requirements-model-conversion.txt](../requirements-model-conversion.txt) pins XGBoost 2.1.4, NumPy 2.2.6, and SciPy 1.15.3, alongside the existing test requirements.
+The potential value is a testable way to add time-aware card and merchant
+history to a local scoring flow. The current evidence does not establish model
+uplift, graph-over-SQL advantage, production readiness, or platform parity.
+See [the project story](../PROJECT_STORY.md) for the step-by-step rationale.
 
-## Verification
+## Why DuckDB was used
 
-| Check | Result |
+This was an offline analytical job over large flat files: validate/join records,
+compute chronological history windows, make a time split, sample training
+negatives, and feed numeric matrices to XGBoost. DuckDB offered local SQL joins,
+aggregations, and window functions for that workflow, while the JSON label map
+was streamed into temporary storage. The evaluator did not need to turn all
+source rows into graph triples just to construct and compare the feature stages.
+
+This was an engineering choice, not a measured DuckDB-versus-RDF benchmark. No
+claim is made that DuckDB is faster or more accurate than an RDF store. The
+separate RDF path is used by the local scoring demo and synthetic graph tests.
+
+## What the two paths do
+
+- **Scoring/demo path:** [`rdf_feature_provider.py`](rdf_feature_provider.py)
+  executes queries defined in [`graph_queries.py`](graph_queries.py) against a
+  caller-supplied RDFLib graph. [`local_scoring_service.py`](local_scoring_service.py)
+  obtains the A0, B1, and C1 state, assembles features, and invokes local
+  inference. The tracked graph is invented synthetic fixture data, not a
+  representative evaluation dataset.
+- **Evaluation path:** [`public_evaluation.py`](public_evaluation.py) parses the
+  supplied transaction, user, card, and label files into temporary DuckDB
+  tables. SQL computes historical features and produces three new XGBoost
+  models under one shared chronological split. It neither reads RDF nor calls
+  the scoring/demo graph provider.
+
+The feature definitions have the same intent, but this run did not perform a
+full-data row-by-row parity check between SQL-generated and RDF-generated
+features. Separate synthetic tests validate portions of the SQL evaluator and
+RDF scoring path; they are not an end-to-end RDF training/evaluation run.
+
+### Bounded parity smoke check
+
+The existing RDF sample manifest has the same four local input hashes as the
+exploratory SQL run. On that same first-1,000-transaction sample, five
+deterministically spaced labeled/modelable rows were compared across all 15
+features: all 75 values matched exactly (absolute tolerance `1e-9`). A larger
+comparison was too slow with repeated RDFLib SPARQL queries and was stopped.
+This is a useful formula smoke check, not full parity evidence: the graph has
+partial history, only five rows were checked, and the files remain
+publisher-unverified. It does not establish graph-attributable performance
+uplift.
+
+## Exploratory input size
+
+The local files resembled version 1 of the public Kaggle transaction-fraud
+dataset. Their recorded sizes total 1,418,288,819 bytes (about 1.42 GB):
+
+| Input | Bytes | Purpose |
+| --- | ---: | --- |
+| `transactions_data.csv` | 1,258,531,040 | Transactions, timestamps, entity IDs, amount |
+| `train_fraud_labels.json` | 159,083,088 | Transaction ID to Yes/No label map |
+| `cards_data.csv` | 509,860 | Card-to-client relation and credit limit |
+| `users_data.csv` | 164,831 | Client age, credit score, and yearly income |
+
+The transaction file had 13,305,915 rows. The label map had 8,914,963 rows:
+13,332 fraud and 8,901,631 non-fraud. The evaluator inner-joined on transaction
+ID and required valid event time, amount, and matching user/card attributes.
+All 8,914,963 supplied labeled rows remained modelable; the other transaction
+rows had no supplied label and were not treated as negatives.
+
+Local SHA-256 hashes were recorded, but they were not checked against
+publisher-provided checksums. The manifest is marked
+`exploratory_provenance_unverified`. Matching file sizes do not authenticate
+file contents, so its metrics are not publication evidence.
+
+## Preprocessing and features
+
+The evaluator validates required headers, canonical numeric IDs, unique
+transaction/label/user/card IDs, and exact Yes/No labels. It parses timestamps
+as `%Y-%m-%d %H:%M:%S`, casts IDs and numeric fields, and removes non-numeric
+characters from amount, yearly income, and credit limit before conversion.
+Rows with invalid time, missing required base values, or non-finite amount,
+income, or limit are excluded. The resulting feature matrices use numeric
+`float32`; there is no scaling or one-hot encoding. Empty history and zero
+ratio denominators map to zero.
+
+| Stage | Features |
 | --- | --- |
-| Full test gate | 120 passed with warnings as errors: calculation, RDF, import, conversion, local inference, and local scoring-service tests. |
-| Environment | Independent Python 3.12.1 environment; XGBoost 2.1.4, NumPy 2.2.6, SciPy 1.15.3. The earlier environment was not changed. |
-| Real artifact loading | Successful; no native load warnings. |
-| Probe population | 72 rows spanning three demographic profiles, eight amounts including negative/zero values, and empty/ordinary/high-fraud historical states. No source transaction records used. |
-| Probability difference | Maximum absolute difference 0.0; declared tolerance 1e-7 absolute, 0 relative. |
-| Raw-margin difference | Maximum absolute difference 0.0 under the same tolerance. |
-| Diagnostic >= 0.5 decisions | Zero changes; 29 probes below and 43 at/above the threshold. This is not a verified vendor threshold or fraud-class mapping. |
-| Integrity | Original source hash unchanged; generated model and probe hashes checked. Converted user attributes empty and feature names match the contract. |
-| Reference CSV | Exact same 72 synthetic input rows and 15 columns exported; equivalence and file hash covered by tests. |
+| A0 | Amount, yearly income, credit limit, age, credit score |
+| A+B (AB) | A0 plus prior card transaction count, prior average amount, amount/prior-average ratio, and hours since previous card transaction |
+| A+B+C (ABC) | A+B plus merchant prior transaction count, fraud count/rate, distinct-card count, distinct fraud-card count, and fraud-card ratio |
 
-The final bundle is under ignored local-data/model-parity-preparation:
+Card history uses labeled transactions strictly before the current event (same-
+second rows are excluded by the one-second window boundary). Merchant history is
+cumulative over labeled merchant events at least 604,800 seconds (seven days)
+before the current event, not only events within the preceding seven days. The
+current and future events are excluded. Label presence and a seven-day lag do
+not establish when the labels would actually have arrived operationally.
 
-- model.json: native model, with user attributes cleared.
-- probes.json: synthetic inputs and native probabilities/margins, explicitly not labeled as fraud confidences.
-- reference_inputs.csv: those same inputs for offline original-runtime scoring.
-- manifest.json: source/payload/output hashes, versions, contract, tolerances, results, and an explicit no-release-clearance status.
+## Training and evaluation protocol
 
-The earlier exploratory bundle under local-data/model-conversion was preserved,
-not overwritten. Neither bundle nor the conversion environment is allowlisted.
+Eligible labeled rows are ordered by event time, then transaction ID. The first
+80% form training data and the final 20% form the held-out test period. Before
+sampling, training contained 7,131,970 rows; test contained 1,782,993 rows,
+including 3,117 fraud cases. The test set was not downsampled.
 
-## Reproduce
+Training retained all 10,215 fraud cases and deterministically selected 20
+non-fraud rows per fraud case (204,300 negatives), for 214,515 training rows.
+The same selected rows and chronological test set are used for each feature
+stage. Each stage is a fresh model; the existing converted C1 model is not used
+as though it had been trained under this protocol.
 
-From the public edition root, create the conversion environment only if absent:
+Shared XGBoost settings: `binary:logistic`, `gbtree`, histogram tree method,
+maximum depth 6, learning rate 0.1, minimum child weight 1, 150 boosting rounds,
+full row/column sampling, L2 regularization 1, L1 regularization 0, one thread,
+and seed `949776430`. There was no calibration, hyperparameter search, or
+validation-based early stopping.
+
+Predictions are evaluated only on the untouched test set:
+
+- **AUPRC:** step-wise average precision, grouping equal scores at each
+  threshold.
+- **Review capacity:** rank by predicted fraud probability and inspect the top
+  0.1%, 0.5%, and 1.0% of test rows; the reviewed count is rounded up.
+- **Queue metrics:** fraud count captured, share of all test fraud captured,
+  precision, lift over random selection, and fraud amount captured.
+- **Fraud amount:** sum of `max(amount, 0)` for true-fraud rows in the reviewed
+  queue. It is an amount in source units, not confirmed USD, recovered money,
+  prevented loss, or realized savings.
+
+Numeric metrics remain only in the ignored
+`local-data/public-evaluation-local-exploratory/` output. No transaction rows
+or labels are included in that output, and no internal presentation figures
+were used.
+
+## What would support the graph claim
+
+A careful current statement is: **the scoring demo uses RDF-derived client,
+card, and merchant history features; a separate exploratory SQL evaluation
+examined the predictive value of similarly defined history features.** The
+current evaluation does not establish a graph-attributable performance uplift.
+
+To make a stronger evidence-based claim, first verify a fresh, version-pinned
+dataset and its license. Then generate the training and test features through
+the RDF path (or verify SQL/RDF feature parity row by row with temporal-boundary
+cases), confirm point-in-time and label-availability assumptions, and evaluate
+A0/AB/ABC with the same split and protocol on authenticated data. An A0 versus
+AB/ABC comparison would support the value of added historical features; it would
+not by itself show that RDF representation is superior to equivalent SQL
+features. A separate controlled comparison or benchmark would be needed for
+claims about the graph technology itself.
+
+To rerun the exploratory evaluator, place the four inputs in ignored
+`local-data/kaggle-v1` and use a new output name:
 
 ```powershell
-py -3.12 -m venv .venv-model-conversion
-.\.venv-model-conversion\Scripts\python.exe -I -m pip --isolated install --index-url https://pypi.org/simple -r requirements-model-conversion.txt
-$previousAutoload = $env:PYTEST_DISABLE_PLUGIN_AUTOLOAD
-$env:PYTEST_DISABLE_PLUGIN_AUTOLOAD = '1'
-try {
-	.\.venv-model-conversion\Scripts\python.exe -I -B -m pytest -q -W error -c pytest.ini
-} finally {
-	$env:PYTEST_DISABLE_PLUGIN_AUTOLOAD = $previousAutoload
-}
+.\.venv\Scripts\python.exe -I -m pip --isolated install --index-url https://pypi.org/simple -r requirements-evaluation.txt
+.\.venv\Scripts\python.exe -B FastAPI/public_evaluation.py --input-dir local-data/kaggle-v1 --output-name public-evaluation-v1
 ```
 
-Four native tests skip if optional conversion dependencies are absent. A skipped
-run is not the full conversion gate. Tests need no external services; installing
-dependencies contacts public PyPI. The original model is not required by tests.
-
-For conversion, set $reviewedModel to the path of the existing reviewed artifact;
-no source copy is needed. Choose an unused output name:
-
-```powershell
-.\.venv-model-conversion\Scripts\python.exe -B -W error FastAPI/convert_model.py --source-model $reviewedModel --acknowledge-local-model-review --output-name model-parity-next
-```
-
-Use only reviewed, trusted local artifacts. A virtual environment separates
-dependencies; it is not an operating-system security sandbox. Header checks do
-not make a native model parser safe for arbitrary untrusted input. The converter
-is a local migration tool, not a public model-upload endpoint. Unexpected native
-warnings fail conversion; a specifically recognized legacy-compatibility warning
-is recorded if encountered. No warnings were encountered for this artifact.
-
-## Remaining Parity Gate
-
-An offline AI Studio run produced a 72-row, 18-column reference CSV using the
-repository entry `//KG+AIML/C1_Fraud_Model`. The local repository index resolves
-that filesystem repository to the original project directory, and the model
-file's SHA-256 matches the conversion manifest's source hash. Its 15 input
-columns also match all 72 synthetic probe rows exactly. Wrong model bytes and
-input parsing/order/value differences are therefore ruled out. The export contains the expected
-`prediction(isFraud)`, `confidence(true)`, and `confidence(false)` columns.
-
-| Comparison | Result |
-| --- | --- |
-| Vendor confidence consistency | `confidence(true)` and `confidence(false)` sum to 1 on every row. Vendor labels match `confidence(true) >= 0.5` on all 72 rows; none of the observed rows distinguish `>` from `>=`. |
-| Class orientation | `confidence(true)` is closer to native XGBoost probability than its complement. This is evidence for orientation, not confidence parity. |
-| Confidence parity | Native probability vs vendor `confidence(true)`: maximum absolute difference 0.4360636; mean absolute difference 0.0676034. Thirty rows differ by more than 0.01. Vendor `confidence(false)` has the corresponding complement difference. |
-| Decision parity at 0.5 | Native probability thresholded at 0.5 agrees with vendor `prediction(isFraud)` on 70 of 72 rows; two decisions differ. |
-
-**Parity is not achieved. Do not configure production local scoring from this
-comparison.** The inputs and vendor label/confidence relationship are now
-verified, but the native model does not reproduce the vendor confidence values
-or every decision. The exact model bytes loaded from the AI Studio repository
-have now been hash-matched to the inspected `.rmtabmod` source. The remaining
-difference is in evaluation/runtime behavior rather than model identity or
-input data. The installed extension JAR contains XGBoost4J 1.4.1 metadata.
-Direct legacy-model inference in Python XGBoost 1.4.1, 1.4.2, 1.7.6, 2.0.3,
-and 2.1.4 produced byte-identical probability and margin vectors on these rows;
-all four runtimes retain the same 30 confidence differences and two decision
-mismatches. This rules out a simple Python XGBoost version difference, but does
-not prove Java/Python wrapper equivalence or identify the exact discrepancy.
-
-Next, inspect the AI Studio XGBoost4J wrapper's feature-matrix construction,
-output transformation, and prediction options against the Python inference path.
-Do not install more Python versions or tune a threshold to hide confidence
-mismatches. Keep the vendor export ignored; it contains only synthetic inputs
-with local model outputs, not the original transaction data.
-
-The 72 probes remain a focused starting set, not exhaustive threshold,
-missing-value, or production testing. Only same-runtime native JSON round-trip
-equality is established; vendor equivalence, API integration, training-data
-provenance, dependency/security review, and public release remain separate gates.
-The converted model is already present under ignored
-`local-data/model-parity-preparation/model.json`; it has not been added to Git.
-
-Only same-version native conversion was tested; the first vendor comparison
-found confidence and decision mismatches. The final serving runtime, API
-integration, training-data provenance, full dependency
-locking/security review, and public release remain separate gates. No training
-accuracy or graph-feature uplift is claimed. No Git initialization, commit,
-push, or publication occurred.
-
-## Why This Matters
-
-We have executable evidence that the trained booster can be preserved in an open
-native format and used for a disclosed portfolio demo without retraining. Exact
-RapidMiner confidence/decision parity is not achieved; HTTP and React integration
-must clearly disclose that limitation rather than present the native scores as
-identical to the original runtime.
+The runner records local hashes and checks that inputs did not change during
+the run. These controls do not establish publisher identity or publication
+clearance.
