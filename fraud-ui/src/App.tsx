@@ -3,6 +3,7 @@ import type { CSSProperties, FormEvent } from 'react'
 import {
   Activity,
   ArrowRight,
+  BarChart3,
   CircleAlert,
   CircleCheck,
   Clock3,
@@ -52,6 +53,49 @@ const TIMING_STAGES = [
 const AMOUNT_PRESETS = [25, 75, 250, 1000]
 
 type ResultView = 'snapshot' | 'signals' | 'timing'
+type ReviewCapacityKey = '0.1' | '0.5' | '1.0'
+
+const REVIEW_CAPACITY_OPTIONS: { key: ReviewCapacityKey; label: string }[] = [
+  { key: '0.1', label: '0.1%' },
+  { key: '0.5', label: '0.5%' },
+  { key: '1.0', label: '1.0%' },
+]
+
+const EXPLORATORY_RESULTS = [
+  {
+    stage: 'A0',
+    label: 'Static baseline',
+    features: 5,
+    auprc: 0.0170115704,
+    capture: {
+      '0.1': { fraud: 90, amount: 23521.43, share: 8.5553 },
+      '0.5': { fraud: 192, amount: 57946.42, share: 21.0765 },
+      '1.0': { fraud: 271, amount: 82730.84, share: 30.0913 },
+    },
+  },
+  {
+    stage: 'A+B',
+    label: 'Card history',
+    features: 9,
+    auprc: 0.0198451034,
+    capture: {
+      '0.1': { fraud: 115, amount: 31308.8, share: 11.3878 },
+      '0.5': { fraud: 248, amount: 67430.96, share: 24.5263 },
+      '1.0': { fraud: 360, amount: 94335.64, share: 34.3122 },
+    },
+  },
+  {
+    stage: 'A+B+C',
+    label: 'Merchant history',
+    features: 15,
+    auprc: 0.2812252315,
+    capture: {
+      '0.1': { fraud: 836, amount: 97869.42, share: 35.5975 },
+      '0.5': { fraud: 1421, amount: 162069.86, share: 58.9488 },
+      '1.0': { fraud: 1674, amount: 193039.19, share: 70.2131 },
+    },
+  },
+]
 
 function localDateTimeNow(): string {
   const now = new Date()
@@ -106,6 +150,7 @@ function App() {
   const [loadingExample, setLoadingExample] = useState(false)
   const [defaultsStatus, setDefaultsStatus] = useState<string | null>(null)
   const [resultView, setResultView] = useState<ResultView>('snapshot')
+  const [reviewCapacity, setReviewCapacity] = useState<ReviewCapacityKey>('0.5')
   const formTouched = useRef(false)
 
   useEffect(() => {
@@ -197,6 +242,7 @@ function App() {
   const timingMaximum = result
     ? Math.max(1, ...TIMING_STAGES.map(([, key]) => result.timings_ms[key] ?? 0))
     : 1
+  const maxCapturedAmount = Math.max(...EXPLORATORY_RESULTS.map((item) => item.capture[reviewCapacity].amount))
 
   return (
     <main className="app-shell">
@@ -525,6 +571,90 @@ function App() {
         <div className="method-stage">
           <span className="stage-index">C1</span>
           <div><strong>Merchant context</strong><span>Lagged fraud + card aggregates</span></div>
+        </div>
+      </section>
+
+      <section className="evaluation-section" aria-labelledby="evaluation-title">
+        <div className="evaluation-header">
+          <div>
+            <p className="section-kicker">OFFLINE MODEL COMPARISON</p>
+            <h2 id="evaluation-title">What changed as history was added?</h2>
+            <p>Fresh models, one chronological test period, and the same review capacity.</p>
+          </div>
+          <div className="capacity-control" role="group" aria-label="Review capacity">
+            <span>Review top</span>
+            {REVIEW_CAPACITY_OPTIONS.map(({ key, label }) => (
+              <button
+                aria-pressed={reviewCapacity === key}
+                className={reviewCapacity === key ? 'selected' : ''}
+                key={key}
+                onClick={() => setReviewCapacity(key)}
+                type="button"
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="evaluation-caveat">
+          <CircleAlert size={16} />
+          <p>Exploratory only: local input files match Kaggle v1 sizes, but their contents are not publisher-authenticated. Amounts are source units, not confirmed dollars or recovered savings. Features were built with DuckDB, not RDF; this is not evidence of graph-over-SQL uplift.</p>
+        </div>
+
+        <div className="evaluation-grid">
+          <div className="capture-plot" role="group" aria-label={`Source amount captured in the top ${reviewCapacity}% of the test set`}>
+            <div className="plot-heading">
+              <div><BarChart3 size={17} /><h3>Fraud amount captured</h3></div>
+              <span>Source units</span>
+            </div>
+            <p className="plot-subtitle">Top {reviewCapacity}% of the held-out test period</p>
+            <div className="capture-bars">
+              {EXPLORATORY_RESULTS.map((item) => {
+                const amount = item.capture[reviewCapacity].amount
+                return (
+                  <div className="capture-bar-row" key={item.stage}>
+                    <div className="capture-bar-label"><strong>{item.stage}</strong><span>{item.label}</span></div>
+                    <div className="capture-bar-track" aria-hidden="true">
+                      <span style={{ width: `${(amount / maxCapturedAmount) * 100}%` }} />
+                    </div>
+                    <strong className="capture-bar-value">{formatNumber(amount)}</strong>
+                  </div>
+                )
+              })}
+            </div>
+            <div className="plot-axis"><span>0</span><span>{formatNumber(maxCapturedAmount)}</span></div>
+          </div>
+
+          <div className="evaluation-table-wrap">
+            <table className="evaluation-table">
+              <caption>Exploratory results at {reviewCapacity}% review capacity</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Stage</th>
+                  <th scope="col">AUPRC</th>
+                  <th scope="col">Fraud found</th>
+                  <th scope="col">Amount captured*</th>
+                  <th scope="col">Fraud value share</th>
+                </tr>
+              </thead>
+              <tbody>
+                {EXPLORATORY_RESULTS.map((item) => {
+                  const capture = item.capture[reviewCapacity]
+                  return (
+                    <tr key={item.stage}>
+                      <th scope="row"><strong>{item.stage}</strong><span>{item.features} features</span></th>
+                      <td>{item.auprc.toFixed(4)}</td>
+                      <td>{formatNumber(capture.fraud)}</td>
+                      <td>{formatNumber(capture.amount)}</td>
+                      <td>{capture.share.toFixed(1)}%</td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+            <p className="table-note">*Positive source amount summed for true-fraud rows in the review queue. Currency is unverified.</p>
+          </div>
         </div>
       </section>
 
