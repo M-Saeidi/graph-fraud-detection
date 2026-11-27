@@ -251,6 +251,7 @@ is at <http://127.0.0.1:8000/docs>.
 ## Documentation
 
 - [Project story and engineering decisions](PROJECT_STORY.md)
+- [Model card](MODEL_CARD.md)
 - [RDF data model and bounded importer](graph/README.md)
 - [Training, evaluation, and provenance evidence](FastAPI/SCORE_EVIDENCE_INSPECTION.md)
 - [Public release checklist](RELEASE_CHECKLIST.md)
