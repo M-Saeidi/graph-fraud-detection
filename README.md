@@ -40,11 +40,34 @@ flowchart TB
 The two paths are intentionally separate today: scoring queries RDF, while the
 exploratory feature-stage evaluation uses DuckDB over flat files.
 
+### Why use a graph here?
+
+A graph brings the pieces of a transaction into one connected view: client,
+card, merchant, transaction, and fraud label. It gives card and merchant history
+named relationships, reusable time rules, and traceable feature values.
+
+The main advantages for this project are:
+
+- **Connected context:** one query can retrieve customer, card, and merchant
+  history instead of spreading repeated joins across application code.
+- **Shared rules:** feature names and time cutoffs live in a named graph model,
+  so different services can use the same definitions.
+- **Visible evidence:** the workbench can show the history values that were
+  supplied to the model.
+- **Easier integration:** new systems or source tables can add relationships
+  without changing the model’s fixed 15-feature input contract.
+
+These are engineering and integration advantages, not a proven increase in
+accuracy. SQL can calculate the same values efficiently. This repository uses
+DuckDB in the offline comparison to test feature stages without mixing graph
+and storage concerns. A fair graph-versus-SQL benchmark would need identical
+features, data, splits, and label-availability rules.
+
 ## Preview
 
 The screenshot uses the synthetic local graph and model.
 
-![Transaction assessment workbench with synthetic graph data](docs/workbench-preview.png)
+<img src="docs/workbench-preview.png" width="960" alt="Transaction assessment workbench using synthetic graph data">
 
 ## The engineering path
 
@@ -63,6 +86,35 @@ The graph path makes relationships and time rules explicit. That's the idea
 we're testing, not proof that graphs improve fraud detection. The current large
 evaluation computes history features with DuckDB from flat files; it tests the
 feature stages, not RDF-versus-SQL performance.
+
+### Why C1 features were added
+
+C1 summarizes the behavior of the same merchant before the current transaction:
+
+- **Merchant prior transaction count** describes how much history is available.
+- **Prior fraud count** and **fraud rate** measure the merchant's observed risk.
+- **Prior unique cards** describes reach across different cards.
+- **Prior unique fraud cards** and **fraud-card ratio** identify whether fraud is
+  concentrated in a small set of cards at that merchant.
+
+These six signals cover volume, observed fraud proportion, customer breadth,
+and concentration. Zero history maps to count/rate zero rather than allowing a
+missing denominator to produce an invalid model value.
+
+C1 history is strictly point-in-time: a merchant transaction is eligible only
+when it belongs to the same merchant, has a known fraud label, and is at least
+604,800 seconds (seven days) older than the scored transaction. Card history is
+also strictly earlier than the scored event, so same-time and future rows are
+excluded. The model table is split chronologically before training: the first
+80% trains the models and the final 20% is held out without downsampling. Fraud
+labels from test rows never train the models, and only training rows are
+negatively sampled.
+
+The seven-day cutoff is a leakage-control assumption, not proof that labels
+really became available after exactly seven days. The source data has no
+label-arrival timestamp. If actual labels arrived sooner or later, C1 could
+contain a label-arrival bias. Production use should replace this proxy with an
+explicit label timestamp and recalculate features with it.
 
 ## Platform context
 

@@ -21,11 +21,12 @@ inputs, and show the evidence behind a result?
    adds merchant aggregates from labeled transactions at least seven days old.
    The temporal rules are explicit and tested; the data does not contain label
    arrival timestamps, so the seven-day delay remains an assumption.
-3. **Represent relationships as graph data.** A small RDF vocabulary and
-   read-only SPARQL queries connect transactions with cards, customers, and
-   merchants. The importer accepts a bounded set of fields and discards
-   unrelated columns. This makes the feature path inspectable; it does not, by
-   itself, prove better accuracy or better performance than SQL.
+3. **Represent relationships as graph data.** RDF and SPARQL connect
+   transactions with customers, cards, merchants, and labels. The graph gives
+   relationship-based history a named, reusable structure and makes the values
+   traceable for a single score. It also keeps graph details behind the fixed
+   model input contract. SQL can calculate the same values, so this project does
+   not claim a graph accuracy or SQL speed advantage without a controlled test.
 4. **Separate features from inference.** A fixed 15-feature interface feeds a
    native XGBoost model. The local provider checks names and values at the
    boundary, so feature drift fails clearly instead of producing a plausible

@@ -77,8 +77,18 @@ was streamed into temporary storage. The evaluator did not need to turn all
 source rows into graph triples just to construct and compare the feature stages.
 
 This was an engineering choice, not a measured DuckDB-versus-RDF benchmark. No
-claim is made that DuckDB is faster or more accurate than an RDF store. The
-separate RDF path is used by the local scoring demo and synthetic graph tests.
+claim is made that either storage option is faster or produces better predictions
+without identical feature definitions, data, temporal rules, and splits.
+
+The graph value in this solution is architectural rather than proven as an
+accuracy gain. RDF represents the transaction, client, card, merchant, and label
+relationships directly. SPARQL gives those relationships a reusable vocabulary,
+explicit point-in-time filters, and traceable evidence. This can simplify adding
+new source systems or relationship-based features, and it keeps the model behind
+A0/B1/C1 feature names instead of source-table details. SQL remains appropriate
+for a high-throughput offline batch and for controlled feature-stage evaluation.
+The five-row RDF/SQL smoke check establishes formula consistency only; it does
+not establish full-data parity or graph-attributable model uplift.
 
 ## What the two paths do
 
@@ -150,6 +160,42 @@ ratio denominators map to zero.
 | A0 | Amount, yearly income, credit limit, age, credit score |
 | A+B (AB) | A0 plus prior card transaction count, prior average amount, amount/prior-average ratio, and hours since previous card transaction |
 | A+B+C (ABC) | A+B plus merchant prior transaction count, fraud count/rate, distinct-card count, distinct fraud-card count, and fraud-card ratio |
+
+### C1 feature selection and leakage control
+
+The C1 feature set extends A+B with six merchant-level signals selected to
+represent four useful dimensions:
+
+- **Volume:** distinct prior transaction count.
+- **Observed fraud:** prior fraud count and fraud rate.
+- **Breadth:** distinct prior card count.
+- **Concentration:** distinct fraud-card count and fraud-card ratio.
+
+Together, these features test whether a merchant's historical transaction volume,
+fraud proportion, and card concentration add information beyond static and card
+history. Each rate has an explicit zero denominator: no eligible history yields
+zero, rather than an error or unbounded value.
+
+The point-in-time rules are explicit. Card history uses only transaction IDs
+strictly earlier than the scoring event, with same-second rows excluded. Merchant
+history uses only the same merchant and transactions at least 604,800 seconds
+(seven days) earlier than the scoring event. Current, same-time, and future
+transactions do not contribute. Both windows are cumulative, so the features
+summarize earlier history rather than a rolling seven-day slice.
+
+For training and evaluation, the labeled rows are ordered by event time and
+transaction ID before the 80/20 split. Test labels are not used to fit XGBoost,
+only to calculate held-out metrics. Negative sampling is restricted to the first
+80% training partition; test prevalence remains unchanged. The three feature
+stages reuse the same chronological partition and sampled training rows.
+
+This is a strong temporal guard against direct future-row leakage, but it is
+not complete label-arrival leakage protection. The source provides a fraud label,
+not the date and time that the label became available. The seven-day lag is an
+assumption used consistently across features and evaluation. A production
+implementation should obtain a label timestamp and model availability explicitly;
+otherwise C1 may contain more label information than would be available to an
+operating scorer.
 
 Card history uses labeled transactions strictly before the current event (same-
 second rows are excluded by the one-second window boundary). Merchant history is
