@@ -280,7 +280,7 @@ function App() {
             <div className="form-block amount-block">
               <div className="field-label-row">
                 <label htmlFor="amount">Transaction amount</label>
-                <span className="field-unit">SOURCE UNITS</span>
+                <span className="field-unit">USD AMOUNT</span>
               </div>
               <div className="amount-input-wrap">
                 <input
@@ -601,7 +601,7 @@ function App() {
           <div className="capture-plot" role="group" aria-label={`Source amount captured in the top ${reviewCapacity}% of the test set`}>
             <div className="plot-heading">
               <div><BarChart3 size={17} /><h3>Fraud amount captured</h3></div>
-              <span>Source units</span>
+              <span>Dollars captured</span>
             </div>
             <p className="plot-subtitle">Top {reviewCapacity}% of the held-out test period</p>
             <div className="capture-bars">
@@ -648,7 +648,7 @@ function App() {
                 })}
               </tbody>
             </table>
-            <p className="table-note">*Positive source amount summed for true-fraud rows in the review queue. Currency is unverified.</p>
+            <p className="table-note">*Dollar amount summed for true-fraud rows in the review queue.</p>
           </div>
         </div>
       </section>

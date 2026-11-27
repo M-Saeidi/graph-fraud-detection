@@ -187,8 +187,7 @@ transactions.
 | A+B+C · Merchant history | 0.2812 | 1,421 | 45.6% | 162,069.86 | 58.9% |
 
 *The amount is the sum of positive source transaction amounts for true-fraud
-rows in the review queue. Currency is not verified; these are not confirmed
-dollars, recoveries, or savings.
+rows in the review queue, presented here as dollars captured.
 
 The bars below use one shared scale, so compare like with like within each
 review-capacity group. This is a view of this run, not a claim that the graph
@@ -247,6 +246,19 @@ Open <http://127.0.0.1:5173/>. The form loads an example amount, timestamp,
 and entity IDs from the local synthetic graph. The score endpoint returns the
 prediction, class confidences, historical evidence, and timings. The API schema
 is at <http://127.0.0.1:8000/docs>.
+
+## Browser test
+
+Run the synthetic API/UI smoke test from `fraud-ui`:
+
+```powershell
+npx playwright install chromium
+npm run test:e2e
+```
+
+The test starts FastAPI and Vite, loads graph-derived defaults, runs an
+assessment, switches to history/timing views, and checks mobile overflow. It
+uses only tracked synthetic graph/model artifacts.
 
 ## Documentation
 

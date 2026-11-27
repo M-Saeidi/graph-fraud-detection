@@ -3,6 +3,11 @@
 /*
 !/.gitignore
 !/LICENSE
+!/.github/
+/.github/*
+!/.github/workflows/
+/.github/workflows/*
+!/.github/workflows/e2e.yml
 !/README.md
 !/PROJECT_STORY.md
 !/MODEL_CARD.md
@@ -60,6 +65,10 @@
 !/fraud-ui/tsconfig.json
 !/fraud-ui/tsconfig.node.json
 !/fraud-ui/vite.config.ts
+!/fraud-ui/playwright.config.ts
+!/fraud-ui/e2e/
+/fraud-ui/e2e/*
+!/fraud-ui/e2e/scoring.spec.ts
 !/fraud-ui/src/
 /fraud-ui/src/*
 !/fraud-ui/src/App.tsx
