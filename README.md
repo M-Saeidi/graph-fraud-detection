@@ -254,3 +254,9 @@ is at <http://127.0.0.1:8000/docs>.
 - [RDF data model and bounded importer](graph/README.md)
 - [Training, evaluation, and provenance evidence](FastAPI/SCORE_EVIDENCE_INSPECTION.md)
 - [Public release checklist](RELEASE_CHECKLIST.md)
+
+## License
+
+The repository source is licensed under the [Apache License 2.0](LICENSE).
+Third-party dependencies, the native model, and external datasets remain subject
+to their respective licenses or terms.

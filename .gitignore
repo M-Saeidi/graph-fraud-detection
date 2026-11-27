@@ -2,6 +2,7 @@
 # Expand this allowlist explicitly after each component passes review.
 /*
 !/.gitignore
+!/LICENSE
 !/README.md
 !/PROJECT_STORY.md
 !/RELEASE_CHECKLIST.md
